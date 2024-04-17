@@ -1,6 +1,8 @@
 use crypto_box;
 use serde::{Deserialize, Serialize};
 
+pub mod binserde;
+
 /// Newtype for Nonce, allowing implementation of binary serialization
 /// when transferred in p2p messages
 #[derive(Debug, PartialEq, PartialOrd)]

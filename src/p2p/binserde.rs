@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::p2p::{Nonce, PublicKey};
 
-use super::bin::BuffVisitor;
+use crate::encoding::bin::BuffVisitor;
 
 impl<'de> Deserialize<'de> for Nonce {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
