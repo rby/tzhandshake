@@ -7,8 +7,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.82"
+async-trait = "0.1.80"
 clap = { version = "4.5.4", features = ["derive"] }
 crypto_box = { version = "0.9.1", features = ["serde"] }
+rand = "0.8.5"
 serde = { version = "1.0.197", features = ["derive", "alloc"] }
 serde_json = "1.0.115"
 serdect = "0.2.0"
