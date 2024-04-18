@@ -107,7 +107,8 @@ impl Handshake {
         // these are messages that seem to be exchanged to verify that we can encrypt/decrypt
         // correctly. Not sure why we don't that with Acks.
         chan.write_metadata().await?;
-        chan.read_metadata().await?;
+        let metadata = chan.read_metadata().await?;
+        println!("metadata : {:?}", metadata);
 
         Ok(chan)
     }
@@ -167,12 +168,11 @@ impl<S> Channel<S>
 where
     S: AsyncReadExt + Send + Unpin,
 {
-    async fn read_metadata(&mut self) -> Result<(), P2pError>
+    async fn read_metadata(&mut self) -> Result<Metadata, P2pError>
     where
         S: AsyncReadExt + Unpin,
     {
-        let _ = self.read::<Metadata>().await?;
-        Ok(())
+        self.read::<Metadata>().await
     }
 }
 const TAG_LENGTH: u16 = 16;
