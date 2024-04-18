@@ -1,12 +1,24 @@
-use crypto_box;
+use crypto_box::{self, aead::rand_core::CryptoRngCore};
 use serde::{Deserialize, Serialize};
 
 pub mod binserde;
+pub mod handshake;
 
 /// Newtype for Nonce, allowing implementation of binary serialization
 /// when transferred in p2p messages
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct Nonce(crypto_box::Nonce);
+
+impl Nonce {
+    pub fn generate<R>(rng: &mut R) -> Self
+    where
+        R: CryptoRngCore,
+    {
+        let mut bytes = [0; 24];
+        rng.fill_bytes(&mut bytes);
+        Nonce::from(bytes)
+    }
+}
 
 impl From<[u8; 24]> for Nonce {
     fn from(value: [u8; 24]) -> Self {
@@ -16,6 +28,11 @@ impl From<[u8; 24]> for Nonce {
 impl AsRef<[u8]> for Nonce {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+impl Default for Nonce {
+    fn default() -> Self {
+        Nonce::from([0; 24])
     }
 }
 
@@ -31,6 +48,18 @@ impl From<[u8; 32]> for PublicKey {
 impl AsRef<[u8]> for PublicKey {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl PublicKey {
+    pub fn new(pk: crypto_box::PublicKey) -> Self {
+        PublicKey(pk)
+    }
+}
+
+impl Default for PublicKey {
+    fn default() -> Self {
+        PublicKey::from([0; 32])
     }
 }
 
@@ -50,13 +79,31 @@ impl AsRef<[u8]> for ChainName {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct P2PVersion(u16);
+
+impl Default for P2PVersion {
+    fn default() -> Self {
+        P2PVersion(1)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DDBVersion(u16);
+
+impl Default for DDBVersion {
+    fn default() -> Self {
+        DDBVersion(2)
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct ConnectionMessage {
     pub(crate) port: u16,
     pub(crate) public_key: PublicKey,
     pub(crate) proof_of_work_stamp: Nonce,
     pub(crate) nonce: Nonce,
     pub(crate) chain_name: ChainName,
-    pub(crate) distributed_db_version: u16,
-    pub(crate) p2p_version: u16,
+    pub(crate) distributed_db_version: DDBVersion,
+    pub(crate) p2p_version: P2PVersion,
 }

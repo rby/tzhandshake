@@ -48,7 +48,7 @@ mod tests {
 
     use crate::{
         encoding::bin::to_bytes,
-        p2p::{ChainName, ConnectionMessage},
+        p2p::{ChainName, ConnectionMessage, DDBVersion, P2PVersion},
     };
 
     #[test]
@@ -59,8 +59,8 @@ mod tests {
             proof_of_work_stamp: [1; 24].into(),
             nonce: [2; 24].into(),
             chain_name: ChainName::default(),
-            distributed_db_version: 2,
-            p2p_version: 1,
+            distributed_db_version: DDBVersion::default(),
+            p2p_version: P2PVersion::default(),
         };
         let res = to_bytes(&conn_msg)?;
         assert_eq!(128, res.len());

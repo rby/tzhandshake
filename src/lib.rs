@@ -1,3 +1,3 @@
 mod encoding;
-mod identity;
-mod p2p;
+pub mod identity;
+pub mod p2p;
