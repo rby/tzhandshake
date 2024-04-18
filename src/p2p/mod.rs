@@ -97,6 +97,9 @@ impl Default for DDBVersion {
     }
 }
 
+#[derive(Debug, PartialEq, Default)]
+pub struct Metadata([u8; 2]);
+
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct ConnectionMessage {
     pub(crate) port: u16,
@@ -106,4 +109,10 @@ pub struct ConnectionMessage {
     pub(crate) chain_name: ChainName,
     pub(crate) distributed_db_version: DDBVersion,
     pub(crate) p2p_version: P2PVersion,
+}
+
+impl ConnectionMessage {
+    fn public_key(&self) -> &crypto_box::PublicKey {
+        &self.public_key.0
+    }
 }
