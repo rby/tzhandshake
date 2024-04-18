@@ -391,9 +391,9 @@ impl<'de, const N: usize> Visitor<'de> for BuffVisitor<N> {
 }
 
 /// Deserializes a structure from a byte array
-pub fn from_bytes<'de, T>(input: &'de mut [u8]) -> Result<T>
+pub fn from_bytes<T>(input: &mut [u8]) -> Result<T>
 where
-    T: Deserialize<'de>,
+    T: for<'de> Deserialize<'de>,
 {
     let mut deserializer = TezosBinDeserializer::from_bytes(input);
     let t = T::deserialize(&mut deserializer)?;
