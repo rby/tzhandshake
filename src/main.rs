@@ -27,12 +27,12 @@ async fn main() -> Result<()> {
     let args = Cli::parse();
     println!("connecting to {}", args.node);
     let mut rng = thread_rng();
-    let res = Handshake::identity(Identity::from_file(args.identity_path)?)
+    let _chan = Handshake::identity(Identity::from_file(args.identity_path)?)
         .generate_nonce(&mut rng)
         .connect(args.node)
         .await?;
 
-    println!("got: {:?}", res);
+    println!("end of handshake");
 
     Ok(())
 }
