@@ -20,6 +20,32 @@ impl Nonce {
     }
 }
 
+impl Nonce {
+    /// Increments nonces as u16s
+    /// Copied from the ML implementation
+    pub fn inc(&mut self) {
+        self.inc_step(1);
+    }
+    pub fn inc_step(&mut self, step: u16) {
+        self.inc_byteno(22, step);
+    }
+    fn inc_byteno(&mut self, byteno: usize, step: u16) {
+        assert!(byteno < 24, "overflow");
+        assert!(byteno % 2 == 0, "byteno should be even");
+
+        // equivalent to OCaml Bytes.get_uint15_be
+        let mut res = ((self.0[byteno] as u32) << 8) + (self.0[byteno + 1] as u32);
+        res += step as u32;
+        let lo = res & 0xffff;
+        let hi = res >> 16;
+        self.0[byteno] = (lo >> 8) as u8;
+        self.0[byteno + 1] = (lo & 0xff) as u8;
+        if hi != 0 && byteno != 0 {
+            self.inc_byteno(byteno - 2, hi as u16)
+        }
+    }
+}
+
 impl From<[u8; 24]> for Nonce {
     fn from(value: [u8; 24]) -> Self {
         Self(crypto_box::Nonce::from(value))
