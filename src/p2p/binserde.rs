@@ -11,7 +11,7 @@ impl<'de> Deserialize<'de> for Nonce {
     where
         D: serde::Deserializer<'de>,
     {
-        let bytes = deserializer.deserialize_bytes(BuffVisitor::<24>)?;
+        let bytes = deserializer.deserialize_seq(BuffVisitor::<24>)?;
         Ok(Self::from(bytes))
     }
 }
@@ -29,7 +29,7 @@ impl<'de> Deserialize<'de> for PublicKey {
     where
         D: serde::Deserializer<'de>,
     {
-        let bytes = deserializer.deserialize_bytes(BuffVisitor::<32>)?;
+        let bytes = deserializer.deserialize_seq(BuffVisitor::<32>)?;
         Ok(Self::from(bytes))
     }
 }
@@ -63,22 +63,19 @@ mod tests {
             p2p_version: 1,
         };
         let res = to_bytes(&conn_msg)?;
-        assert_eq!(134, res.len());
-        assert_eq!(&res[0..2], &[0, 132]);
+        assert_eq!(128, res.len());
+        assert_eq!(&res[0..2], &[0, 126]);
         assert_eq!(
             &res[2..4],
             &[(conn_msg.port >> 8) as u8, (conn_msg.port & 0xff) as u8]
         );
-        assert_eq!(&res[4..6], &[0, 32]);
-        assert_eq!(&res[6..38], (&conn_msg.public_key).as_ref());
-        assert_eq!(&res[38..40], &[0, 24]);
-        assert_eq!(&res[40..64], (&conn_msg.proof_of_work_stamp).as_ref());
-        assert_eq!(&res[64..66], &[0, 24]);
-        assert_eq!(&res[66..90], (&conn_msg.nonce).as_ref());
-        assert_eq!(&res[90..94], &[0, 0, 0, 36]);
-        assert_eq!(&res[94..130], (&conn_msg.chain_name).as_ref());
-        assert_eq!(&res[130..132], &[0, 2]);
-        assert_eq!(&res[132..134], &[0, 1]);
+        assert_eq!(&res[4..36], (&conn_msg.public_key).as_ref());
+        assert_eq!(&res[36..60], (&conn_msg.proof_of_work_stamp).as_ref());
+        assert_eq!(&res[60..84], (&conn_msg.nonce).as_ref());
+        assert_eq!(&res[84..88], &[0, 0, 0, 36]);
+        assert_eq!(&res[88..124], (&conn_msg.chain_name).as_ref());
+        assert_eq!(&res[124..126], &[0, 2]);
+        assert_eq!(&res[126..128], &[0, 1]);
 
         Ok(())
     }
