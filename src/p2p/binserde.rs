@@ -6,6 +6,8 @@ use crate::p2p::{Nonce, PublicKey};
 
 use crate::encoding::bin::BuffVisitor;
 
+use super::Metadata;
+
 impl<'de> Deserialize<'de> for Nonce {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -39,6 +41,24 @@ impl Serialize for PublicKey {
         S: serde::Serializer,
     {
         serializer.serialize_bytes(self.as_ref())
+    }
+}
+
+impl<'de> Deserialize<'de> for Metadata {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let bytes = deserializer.deserialize_seq(BuffVisitor::<2>)?;
+        Ok(Metadata(bytes))
+    }
+}
+impl Serialize for Metadata {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_bytes(&self.0)
     }
 }
 
