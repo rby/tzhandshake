@@ -3,9 +3,6 @@
 /// Note: Very inefficient: serde (or I can't figure out a way) doesn't offer an obivous
 /// way for handling fixed sized arrays during serialization.
 ///
-/// ```no_run
-/// /// TODO explain with an example
-/// ```
 use std::{io, usize};
 
 use serde::{
@@ -42,6 +39,17 @@ where
     value.serialize(&mut ser)?;
     ser.output[0] = (ser.length >> 8) as u8;
     ser.output[1] = (ser.length & 0xff) as u8;
+    Ok(ser.output)
+}
+pub fn to_bytes_no_header<T>(value: &T) -> Result<Vec<u8>>
+where
+    T: Serialize,
+{
+    let mut output = vec![0u8; 0];
+    output.reserve(1024);
+
+    let mut ser = TezosBinSerializer { output, length: 0 };
+    value.serialize(&mut ser)?;
     Ok(ser.output)
 }
 
@@ -101,8 +109,9 @@ impl<'a> Serializer for &'a mut TezosBinSerializer {
             Ok(())
         }
     }
-    fn serialize_bool(self, _v: bool) -> Result<Self::Ok> {
-        unimplemented!()
+    fn serialize_bool(self, v: bool) -> Result<Self::Ok> {
+        // FIXME should be the opposite
+        self.serialize_bytes(if v { &[0] } else { &[1] })
     }
 
     fn serialize_i8(self, _v: i8) -> Result<Self::Ok> {
@@ -436,6 +445,16 @@ impl<'de> TezosBinDeserializer<'de> {
         }
     }
 
+    fn read_bool(&mut self) -> Result<bool> {
+        if self.input.len() < 1 {
+            Err(Error::UnsufficentBytes)
+        } else {
+            let b = self.input[0] == 0; // FIXME should be a 1 but this is a hack just for ack
+            self.input = &self.input[1..];
+            Ok(b)
+        }
+    }
+
     fn ensure_bytes(&mut self, size: usize) -> Result<Vec<u8>> {
         if self.input.len() < size {
             Err(Error::UnsufficentBytes)
@@ -452,7 +471,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut TezosBinDeserializer<'de> {
     type Error = Error;
 
     forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 u32 u64 f32 f64 char str bytes byte_buf option unit
+        i8 i16 i32 i64 u32 u64 f32 f64 char str bytes byte_buf option unit
         unit_struct tuple tuple_struct map enum identifier ignored_any
     }
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
@@ -524,6 +543,14 @@ impl<'de, 'a> Deserializer<'de> for &'a mut TezosBinDeserializer<'de> {
         let _ = name;
         let _ = fields;
         visitor.visit_seq(self)
+    }
+
+    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        let b = self.read_bool()?;
+        visitor.visit_bool(b)
     }
 }
 
