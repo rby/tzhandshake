@@ -108,7 +108,9 @@ mod tests {
         };
 
         let res = to_bytes(&conn_msg)?;
-        let (deser, _) = ConnectionMessage::read(&mut res.as_ref()).await.unwrap();
+        let (deser, _) = ConnectionMessage::full_read_buffer(&mut res.as_ref())
+            .await
+            .unwrap();
         assert_eq!(conn_msg, deser);
         Ok(())
     }
