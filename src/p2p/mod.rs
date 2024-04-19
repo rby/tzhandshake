@@ -142,3 +142,6 @@ impl ConnectionMessage {
         &self.public_key.0
     }
 }
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
+pub struct Ack(bool);
