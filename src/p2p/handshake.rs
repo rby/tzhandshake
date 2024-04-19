@@ -215,7 +215,6 @@ where
         T: Send + for<'de> Deserialize<'de>,
     {
         let mut header = self.stream.read_u16().await?;
-        println!("header : {:?}", header);
         if header < TAG_LENGTH {
             return Err(HandhshakeError::EncryptedMessageShortedThanTag.into());
         }
