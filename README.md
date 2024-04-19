@@ -1,3 +1,5 @@
+![rust-build](https://github.com/rby/tzhandshake/actions/workflows/rust.yml/badge.svg)
+
 # Tezos Handshake
 
 ## Status:
