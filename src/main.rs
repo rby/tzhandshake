@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use clap::Parser;
 use rand::thread_rng;
@@ -33,6 +33,7 @@ async fn main() -> Result<()> {
         .await?;
 
     println!("end of handshake");
+    tokio::time::sleep(Duration::from_secs(10)).await;
 
     Ok(())
 }

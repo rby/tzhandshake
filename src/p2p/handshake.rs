@@ -5,10 +5,10 @@ use std::marker::PhantomData;
 use crate::{
     encoding::{
         self,
-        bin::{from_bytes, to_bytes},
+        bin::{to_bytes, to_bytes_no_header},
     },
     identity::Identity,
-    p2p::{ConnectionMessage, PublicKey},
+    p2p::{Ack, ConnectionMessage, PublicKey},
 };
 
 use anyhow::Result;
@@ -46,6 +46,8 @@ pub enum P2pError {
     Crypto(String),
     #[error("Ser/Deserialization error `{0}`")]
     Serde(#[from] encoding::error::Error),
+    #[error("Anyhow: `{0}`")]
+    Anyhow(#[from] anyhow::Error),
 }
 
 #[derive(Debug)]
@@ -88,8 +90,7 @@ impl Handshake {
         };
         let sent_bytes = to_bytes(&sent)?;
 
-        let mut received_bytes = vec![];
-        let received = ConnectionMessage::read(&mut stream, &mut received_bytes).await?;
+        let (received, received_bytes) = ConnectionMessage::full_read_buffer(&mut stream).await?;
 
         let received = ReceivedMsg::new(received, received_bytes);
 
@@ -106,9 +107,13 @@ impl Handshake {
         );
         // these are messages that seem to be exchanged to verify that we can encrypt/decrypt
         // correctly. Not sure why we don't that with Acks.
+        let _metadata = chan.read_metadata().await?;
+        println!("received metadata: {:?}", _metadata);
         chan.write_metadata().await?;
-        let metadata = chan.read_metadata().await?;
-        println!("metadata : {:?}", metadata);
+
+        let ack = chan.read::<Ack>().await?;
+        println!("received ack: {:?}", ack);
+        chan.write(Ack(true)).await?;
 
         Ok(chan)
     }
@@ -192,8 +197,12 @@ pub trait TezosWrite {
 }
 
 impl<S> Channel<S> {
-    fn inc_local(&mut self) {}
-    fn inc_remote(&mut self) {}
+    fn inc_local(&mut self) {
+        self.local_nonce.inc()
+    }
+    fn inc_remote(&mut self) {
+        self.remote_nonce.inc()
+    }
 }
 
 #[async_trait]
@@ -206,6 +215,7 @@ where
         T: Send + for<'de> Deserialize<'de>,
     {
         let mut header = self.stream.read_u16().await?;
+        println!("header : {:?}", header);
         if header < TAG_LENGTH {
             return Err(HandhshakeError::EncryptedMessageShortedThanTag.into());
         }
@@ -215,11 +225,10 @@ where
 
         let mut encrypted = vec![0; header as usize];
         self.stream.read_exact(&mut encrypted).await?;
-        println!("decrypting using remote nonce {:?}", self.remote_nonce);
         self.channel_key
             .decrypt_in_place_detached(&self.remote_nonce.0, &[0; 0], &mut encrypted, &tag.into())
             .map_err(|s| P2pError::Crypto(s.to_string()))?;
-        let recv = from_bytes::<T>(&mut encrypted)?;
+        let recv = T::read(&mut encrypted.as_ref(), header as usize).await?;
         self.inc_remote();
         Ok(recv)
     }
@@ -233,7 +242,7 @@ where
     where
         T: Send + Serialize,
     {
-        let mut buffer = to_bytes(&value)?;
+        let mut buffer = to_bytes_no_header(&value)?;
         let tag = self
             .channel_key
             .encrypt_in_place_detached(&self.local_nonce.0, &[0; 0], &mut buffer)
@@ -248,6 +257,8 @@ where
         self.stream.write(&tag).await?;
         self.stream.write(&buffer).await?;
         self.stream.flush().await?;
+        // what happened if we fail before this incremnt.
+        // The best for the node is to close the channel, and redo a handshake
         self.inc_local();
         Ok(())
     }
