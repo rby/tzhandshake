@@ -123,6 +123,9 @@ impl Default for DDBVersion {
     }
 }
 
+/// Metadata is actuall 2 booleans
+/// `src/lib_p2p_services/connection_metadata.ml`
+/// (disable_mempool, private_node)
 #[derive(Debug, PartialEq, Default)]
 pub struct Metadata([u8; 2]);
 
