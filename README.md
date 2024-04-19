@@ -10,7 +10,8 @@ I also intend to use it as a playground for learning more about Tezos, and impro
 ## Build & run
 
 ### Generate an identity file:
-Not implemented in the CLI, but you can use octez-node docker image or a local build of octez-node to do that.
+In order to handshake with a Tezos node, we're required to generate a minor proof of work. The proof of work when post-concatenated to the public key should hash to a value that has a number (controlled by a difficulty param defaulting to 36) of leading zero bytes.
+This is not implemented in the CLI for now, so you need to use octez-node docker image or a local build of octez-node to do that.
 Example with docker:
 ```shell
 docker run \
