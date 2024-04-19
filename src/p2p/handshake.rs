@@ -33,7 +33,7 @@ pub enum HandhshakeError {
     #[error("Missing Nonce")]
     MissingNonce,
     #[error("The encrypted message must at least be longer than a tag")]
-    EncryptedMessageShortedThanTag,
+    EncryptedMessageShorterThanTag,
 }
 
 #[derive(Debug, Error)]
@@ -216,7 +216,7 @@ where
     {
         let mut header = self.stream.read_u16().await?;
         if header < TAG_LENGTH {
-            return Err(HandhshakeError::EncryptedMessageShortedThanTag.into());
+            return Err(HandhshakeError::EncryptedMessageShorterThanTag.into());
         }
         let mut tag = [0; TAG_LENGTH as usize];
         self.stream.read_exact(&mut tag).await?;
