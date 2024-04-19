@@ -67,8 +67,8 @@ mod tests {
     use anyhow::Result;
 
     use crate::{
-        encoding::bin::to_bytes,
-        p2p::{ChainName, ConnectionMessage, DDBVersion, P2PVersion},
+        encoding::{bin::to_bytes, read::Read},
+        p2p::ConnectionMessage,
     };
 
     #[test]
@@ -78,9 +78,7 @@ mod tests {
             public_key: [0xf2; 32].into(),
             proof_of_work_stamp: [1; 24].into(),
             nonce: [2; 24].into(),
-            chain_name: ChainName::default(),
-            distributed_db_version: DDBVersion::default(),
-            p2p_version: P2PVersion::default(),
+            ..Default::default()
         };
         let res = to_bytes(&conn_msg)?;
         assert_eq!(128, res.len());
@@ -97,6 +95,21 @@ mod tests {
         assert_eq!(&res[124..126], &[0, 2]);
         assert_eq!(&res[126..128], &[0, 1]);
 
+        Ok(())
+    }
+    #[tokio::test]
+    async fn it_deserializes_connection_message() -> Result<()> {
+        let conn_msg = ConnectionMessage {
+            port: 9732,
+            public_key: [0xf2; 32].into(),
+            proof_of_work_stamp: [1; 24].into(),
+            nonce: [2; 24].into(),
+            ..Default::default()
+        };
+
+        let res = to_bytes(&conn_msg)?;
+        let (deser, _) = ConnectionMessage::read(&mut res.as_ref()).await.unwrap();
+        assert_eq!(conn_msg, deser);
         Ok(())
     }
 }
