@@ -39,7 +39,7 @@ impl Nonce {
         let lo = res & 0xffff;
         let hi = res >> 16;
         self.0[byteno] = (lo >> 8) as u8;
-        self.0[byteno + 1] = (lo & 0xff) as u8;
+        self.0[byteno + 1] = (lo) as u8;
         if hi != 0 && byteno != 0 {
             self.inc_byteno(byteno - 2, hi as u16)
         }

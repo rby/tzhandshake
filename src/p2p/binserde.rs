@@ -85,7 +85,7 @@ mod tests {
         assert_eq!(&res[0..2], &[0, 126]);
         assert_eq!(
             &res[2..4],
-            &[(conn_msg.port >> 8) as u8, (conn_msg.port & 0xff) as u8]
+            &[(conn_msg.port >> 8) as u8, conn_msg.port as u8]
         );
         assert_eq!(&res[4..36], (&conn_msg.public_key).as_ref());
         assert_eq!(&res[36..60], (&conn_msg.proof_of_work_stamp).as_ref());

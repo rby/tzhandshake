@@ -38,7 +38,7 @@ where
     let mut ser = TezosBinSerializer { output, length: 0 };
     value.serialize(&mut ser)?;
     ser.output[0] = (ser.length >> 8) as u8;
-    ser.output[1] = (ser.length & 0xff) as u8;
+    ser.output[1] = ser.length as u8;
     Ok(ser.output)
 }
 pub fn to_bytes_no_header<T>(value: &T) -> Result<Vec<u8>>
@@ -135,7 +135,7 @@ impl<'a> Serializer for &'a mut TezosBinSerializer {
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok> {
-        io::Write::write(&mut self.output, &[(v >> 8 & 0xff) as u8, (v & 0xff) as u8])?;
+        io::Write::write(&mut self.output, &[(v >> 8) as u8, v as u8])?;
         self.incr_length(2)
     }
 
