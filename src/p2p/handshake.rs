@@ -37,7 +37,7 @@ pub enum HandhshakeError {
 }
 
 #[derive(Debug, Error)]
-pub enum P2pError {
+pub enum P2PError {
     #[error("Handhsake Error `{0}`")]
     Handshake(#[from] HandhshakeError),
     #[error("IO error (Tokio) `{0}`")]
@@ -162,7 +162,7 @@ impl<S> Channel<S>
 where
     S: AsyncWriteExt + Send + Unpin,
 {
-    async fn write_metadata(&mut self) -> Result<(), P2pError>
+    async fn write_metadata(&mut self) -> Result<(), P2PError>
     where
         S: AsyncWriteExt + Unpin,
     {
@@ -173,7 +173,7 @@ impl<S> Channel<S>
 where
     S: AsyncReadExt + Send + Unpin,
 {
-    async fn read_metadata(&mut self) -> Result<Metadata, P2pError>
+    async fn read_metadata(&mut self) -> Result<Metadata, P2PError>
     where
         S: AsyncReadExt + Unpin,
     {
@@ -184,14 +184,14 @@ const TAG_LENGTH: u16 = 16;
 
 #[async_trait]
 pub trait TezosRead {
-    async fn read<T>(&mut self) -> Result<T, P2pError>
+    async fn read<T>(&mut self) -> Result<T, P2PError>
     where
         T: Send + for<'de> Deserialize<'de>;
 }
 
 #[async_trait]
 pub trait TezosWrite {
-    async fn write<T>(&mut self, value: T) -> Result<(), P2pError>
+    async fn write<T>(&mut self, value: T) -> Result<(), P2PError>
     where
         T: Send + Serialize;
 }
@@ -210,7 +210,7 @@ impl<S> TezosRead for Channel<S>
 where
     S: AsyncReadExt + Unpin + Send,
 {
-    async fn read<T>(&mut self) -> Result<T, P2pError>
+    async fn read<T>(&mut self) -> Result<T, P2PError>
     where
         T: Send + for<'de> Deserialize<'de>,
     {
@@ -226,7 +226,7 @@ where
         self.stream.read_exact(&mut encrypted).await?;
         self.channel_key
             .decrypt_in_place_detached(&self.remote_nonce.0, &[0; 0], &mut encrypted, &tag.into())
-            .map_err(|s| P2pError::Crypto(s.to_string()))?;
+            .map_err(|s| P2PError::Crypto(s.to_string()))?;
         let recv = T::read(&mut encrypted.as_ref(), header as usize).await?;
         self.inc_remote();
         Ok(recv)
@@ -237,7 +237,7 @@ impl<S> TezosWrite for Channel<S>
 where
     S: AsyncWriteExt + Unpin + Send,
 {
-    async fn write<T>(&mut self, value: T) -> Result<(), P2pError>
+    async fn write<T>(&mut self, value: T) -> Result<(), P2PError>
     where
         T: Send + Serialize,
     {
@@ -245,7 +245,7 @@ where
         let tag = self
             .channel_key
             .encrypt_in_place_detached(&self.local_nonce.0, &[0; 0], &mut buffer)
-            .map_err(|s| P2pError::Crypto(s.to_string()))?;
+            .map_err(|s| P2PError::Crypto(s.to_string()))?;
         let size = tag.len() + buffer.len();
         // is this  a programming error?
         assert!(
