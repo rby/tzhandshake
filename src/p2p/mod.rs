@@ -153,9 +153,15 @@ pub struct Ack(bool);
 mod tests {
     use proptest::proptest;
 
+    use super::Nonce;
+
     fn basic_inc<const N: usize>(nonce: &mut [u8; N], step: u8) {
+        if step == 0 {
+            return;
+        };
         nonce
             .iter_mut()
+            .rev()
             .try_fold(step, |acc, x| match x.overflowing_add(acc) {
                 (res, true) => {
                     *x = res;
@@ -167,21 +173,39 @@ mod tests {
                 }
             });
     }
+    #[rustfmt::skip]
+    fn to_u32(src: &[u8; 4]) -> u32 {
+        (src[0] as u32) << 24 |
+        (src[1] as u32) << 16 |
+        (src[2] as u32) << 8  |
+        (src[3] as u32)
+    }
+
     proptest! {
-        /// We can verify the basic implementation is correct for a size of 2 or 4
-        /// and then once we're comfortable that the `basic_inc` is correct, we can use it
-        /// to proptest the real-implementation
+        // We can verify the basic implementation is correct for a size of 2 or 4
+        // and then once we're comfortable that the `basic_inc` is correct, we can use it
+        // to proptest the real implementation
         #[test]
-        fn it_supports_nonce_incrementing(nonce: [u8; 2], step: u8) {
-            fn to_u16(src: &[u8; 2]) -> u16{
-                src[0] as u16 | (src[1] as u16) << 8
-            }
-            let value = to_u16(&nonce);
-            let (expected, _) = value.overflowing_add(step as u16);
+        fn it_propcheck_basic_inc_for_u16(nonce: [u8; 4], step: u8) {
+            let value = to_u32(&nonce);
+            let (expected, _) = value.overflowing_add(step as u32);
             let mut copy = nonce;
             basic_inc(&mut copy, step);
-            let incremented = to_u16(&copy);
+            let incremented = to_u32(&copy);
             assert_eq!(expected, incremented);
+        }
+
+        #[test]
+        fn it_prop_check_inc_for_u184(arr :[u8;24], step: u8) {
+
+            let  mut copy =  arr ;
+
+            let mut nonce = Nonce::from(arr);
+            basic_inc(&mut copy, step);
+            nonce.inc_step(step as u16);
+            let res = nonce.as_ref();
+            let (_, copyu8, _) = unsafe {copy.align_to::<u8>()};
+            assert_eq!(copyu8, res);
         }
     }
 }
