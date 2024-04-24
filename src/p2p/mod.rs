@@ -148,3 +148,40 @@ impl ConnectionMessage {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct Ack(bool);
+
+#[cfg(test)]
+mod tests {
+    use proptest::proptest;
+
+    fn basic_inc<const N: usize>(nonce: &mut [u8; N], step: u8) {
+        nonce
+            .iter_mut()
+            .try_fold(step, |acc, x| match x.overflowing_add(acc) {
+                (res, true) => {
+                    *x = res;
+                    Some(1)
+                }
+                (res, false) => {
+                    *x = res;
+                    None
+                }
+            });
+    }
+    proptest! {
+        /// We can verify the basic implementation is correct for a size of 2 or 4
+        /// and then once we're comfortable that the `basic_inc` is correct, we can use it
+        /// to proptest the real-implementation
+        #[test]
+        fn it_supports_nonce_incrementing(nonce: [u8; 2], step: u8) {
+            fn to_u16(src: &[u8; 2]) -> u16{
+                src[0] as u16 | (src[1] as u16) << 8
+            }
+            let value = to_u16(&nonce);
+            let (expected, _) = value.overflowing_add(step as u16);
+            let mut copy = nonce;
+            basic_inc(&mut copy, step);
+            let incremented = to_u16(&copy);
+            assert_eq!(expected, incremented);
+        }
+    }
+}
