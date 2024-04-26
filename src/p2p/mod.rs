@@ -21,8 +21,13 @@ impl Nonce {
 }
 
 impl Nonce {
-    /// Increments nonces as u16s
-    /// Copied from the ML implementation
+    /// Increments nonces by 1 as if they were u184 (8 * 24)
+    /// ```rust
+    /// use tzhandhsake::p2p::Nonce;
+    /// let mut nonce = Nonce::from([0xff;24]);
+    /// nonce.inc();
+    /// assert_eq!(nonce.as_ref(), &[0;24]);
+    /// ```
     pub fn inc(&mut self) {
         self.inc_step(1);
     }
@@ -32,16 +37,21 @@ impl Nonce {
     fn inc_byteno(&mut self, byteno: usize, step: u16) {
         assert!(byteno < 24, "overflow");
         assert!(byteno % 2 == 0, "byteno should be even");
-
-        // equivalent to OCaml Bytes.get_uint15_be
-        let mut res = ((self.0[byteno] as u32) << 8) + (self.0[byteno + 1] as u32);
-        res += step as u32;
-        let lo = res & 0xffff;
-        let hi = res >> 16;
-        self.0[byteno] = (lo >> 8) as u8;
-        self.0[byteno + 1] = (lo) as u8;
-        if hi != 0 && byteno != 0 {
-            self.inc_byteno(byteno - 2, hi as u16)
+        let mut step = step as u32;
+        let mut byteno = byteno;
+        loop {
+            // equivalent to OCaml Bytes.get_uint15_be
+            let mut res = ((self.0[byteno] as u32) << 8) + (self.0[byteno + 1] as u32);
+            res += step;
+            let lo = res & 0xffff;
+            let hi = res >> 16;
+            self.0[byteno] = (lo >> 8) as u8;
+            self.0[byteno + 1] = lo as u8;
+            if step == 0 || byteno == 0 {
+                break;
+            }
+            byteno -= 2;
+            step = hi;
         }
     }
 }
@@ -155,6 +165,23 @@ mod tests {
 
     use super::Nonce;
 
+    /// I'm actually wondering if this is not actually the most performant
+    /// implementation.
+    /// ```text
+    /// example::basic_inc::hc34e38a139aa478b:
+    ///         test    sil, sil
+    ///         je      .LBB0_4
+    ///         mov     eax, 23
+    /// .LBB0_2:
+    ///         cmp     rax, -1
+    ///         je      .LBB0_4
+    ///         add     byte ptr [rdi + rax], sil
+    ///         lea     rax, [rax - 1]
+    ///         mov     sil, 1
+    ///         jb      .LBB0_2
+    /// .LBB0_4:
+    ///         ret
+    /// ```
     fn basic_inc<const N: usize>(nonce: &mut [u8; N], step: u8) {
         if step == 0 {
             return;
@@ -196,16 +223,16 @@ mod tests {
         }
 
         #[test]
-        fn it_prop_check_inc_for_u184(arr :[u8;24], step: u8) {
+        fn it_prop_check_inc_for_u184(arr: [u8;24], step: u8) {
 
-            let  mut copy =  arr ;
+            let mut copy =  arr ;
 
             let mut nonce = Nonce::from(arr);
             basic_inc(&mut copy, step);
             nonce.inc_step(step as u16);
             let res = nonce.as_ref();
-            let (_, copyu8, _) = unsafe {copy.align_to::<u8>()};
-            assert_eq!(copyu8, res);
+            let (_, copy_u8, _) = unsafe {copy.align_to::<u8>()};
+            assert_eq!(copy_u8, res);
         }
     }
 }
