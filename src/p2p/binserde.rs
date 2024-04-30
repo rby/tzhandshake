@@ -87,11 +87,11 @@ mod tests {
             &res[2..4],
             &[(conn_msg.port >> 8) as u8, conn_msg.port as u8]
         );
-        assert_eq!(&res[4..36], (&conn_msg.public_key).as_ref());
-        assert_eq!(&res[36..60], (&conn_msg.proof_of_work_stamp).as_ref());
-        assert_eq!(&res[60..84], (&conn_msg.nonce).as_ref());
+        assert_eq!(&res[4..36], (conn_msg.public_key).as_ref());
+        assert_eq!(&res[36..60], (conn_msg.proof_of_work_stamp).as_ref());
+        assert_eq!(&res[60..84], (conn_msg.nonce).as_ref());
         assert_eq!(&res[84..88], &[0, 0, 0, 36]);
-        assert_eq!(&res[88..124], (&conn_msg.chain_name).as_ref());
+        assert_eq!(&res[88..124], (conn_msg.chain_name).as_ref());
         assert_eq!(&res[124..126], &[0, 2]);
         assert_eq!(&res[126..128], &[0, 1]);
 

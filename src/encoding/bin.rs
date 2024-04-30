@@ -380,7 +380,7 @@ pub struct BuffVisitor<const N: usize>;
 
 impl<'de, const N: usize> Visitor<'de> for BuffVisitor<N> {
     type Value = [u8; N];
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_fmt(format_args!("expected an array of bytes of size {}", N))
     }
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
