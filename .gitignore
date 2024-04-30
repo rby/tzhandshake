@@ -1,2 +1,4 @@
 /target
 identity.json
+.direnv/
+.envrc

@@ -80,7 +80,7 @@ impl Handshake {
         A: ToSocketAddrs,
     {
         let mut stream = TcpStream::connect(peer).await?;
-        let nonce = self.nonce.ok_or_else(|| HandhshakeError::MissingNonce)?;
+        let nonce = self.nonce.ok_or(HandhshakeError::MissingNonce)?;
 
         let sent = ConnectionMessage {
             public_key: PublicKey::new(self.identity.public_key.clone()),
@@ -94,7 +94,7 @@ impl Handshake {
 
         let received = ReceivedMsg::new(received, received_bytes);
 
-        stream.write(&sent_bytes).await?;
+        stream.write_all(&sent_bytes).await?;
         stream.flush().await?;
         let sent = SentMsg::new(sent, sent_bytes.to_vec());
         // this form of builder pattern is not great to be honest.
@@ -135,7 +135,7 @@ impl<S> Channel<S> {
         direction: ConnectionDirection,
     ) -> Self {
         let channel_key =
-            crypto_box::SalsaBox::new(&received.value.public_key(), &identity.secret_key);
+            crypto_box::SalsaBox::new(received.value.public_key(), &identity.secret_key);
 
         // reorder the bytes to be fully deterministic before nonce computation
         let (init_bytes, resp_bytes) = match direction {
@@ -253,8 +253,8 @@ where
             "breaking protocol with msg too big",
         );
         self.stream.write_u16(size as u16).await?;
-        self.stream.write(&tag).await?;
-        self.stream.write(&buffer).await?;
+        self.stream.write_all(&tag).await?;
+        self.stream.write_all(&buffer).await?;
         self.stream.flush().await?;
         // what happened if we fail before this incremnt.
         // The best for the node is to close the channel, and redo a handshake

@@ -100,7 +100,7 @@ impl Default for PublicKey {
 }
 
 /// Ghostnet default chain name
-const DEFAULT_CHAIN: &'static str = "TEZOS_ITHACANET_2022-01-25T15:00:00Z";
+const DEFAULT_CHAIN: &str = "TEZOS_ITHACANET_2022-01-25T15:00:00Z";
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChainName(String);

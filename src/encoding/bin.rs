@@ -388,9 +388,9 @@ impl<'de, const N: usize> Visitor<'de> for BuffVisitor<N> {
         A: SeqAccess<'de>,
     {
         let mut bytes = [0; N];
-        for i in 0..N {
+        for (i, bi) in bytes.iter_mut().enumerate().take(N) {
             if let Ok(Some(b)) = seq.next_element::<u8>() {
-                bytes[i] = b;
+                *bi = b;
             } else {
                 return Err(de::Error::invalid_length(i, &self));
             }
@@ -425,7 +425,7 @@ impl<'de> TezosBinDeserializer<'de> {
         self.input.len() == 0
     }
     fn next(&mut self) -> Option<u8> {
-        if self.input.len() == 0 {
+        if self.input.is_empty() {
             None
         } else {
             let elt = self.input[0];
@@ -446,7 +446,7 @@ impl<'de> TezosBinDeserializer<'de> {
     }
 
     fn read_bool(&mut self) -> Result<bool> {
-        if self.input.len() < 1 {
+        if self.input.is_empty() {
             Err(Error::UnsufficentBytes)
         } else {
             let b = self.input[0] == 0; // FIXME should be a 1 but this is a hack just for ack
